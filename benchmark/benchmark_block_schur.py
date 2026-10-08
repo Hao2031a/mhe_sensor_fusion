@@ -60,7 +60,13 @@ summary={'type':'synthetic_numeric_reference_not_cpp_ros', 'seed':20261008,
          'block_median_ms_numpy':float(np.median([q[0] for q in records])*1000),
          'dense_median_ms_numpy':float(np.median([q[1] for q in records])*1000),
          'pass':True}
-out=Path(os.environ.get('CI_ARTIFACT_DIR',str(Path(__file__).parent)))
-out.mkdir(parents=True,exist_ok=True)
-(out/'benchmark_block_schur.json').write_text(json.dumps(summary,indent=2)+'\n')
-print(json.dumps(summary,indent=2))
+report_name = 'benchmark_block_schur.json'
+report_text = json.dumps(summary, indent=2) + '\n'
+# Regression gates and CI harness always read the canonical benchmark directory.
+(Path(__file__).parent / report_name).write_text(report_text, encoding='utf-8')
+# Preserve exported reports for GitHub Actions artifacts when configured.
+if os.environ.get('CI_ARTIFACT_DIR'):
+    artifacts = Path(os.environ['CI_ARTIFACT_DIR'])
+    artifacts.mkdir(parents=True, exist_ok=True)
+    (artifacts / report_name).write_text(report_text, encoding='utf-8')
+print(json.dumps(summary, indent=2))

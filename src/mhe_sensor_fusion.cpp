@@ -504,7 +504,7 @@ public:
       "output.yaw_feedback.require_covariance", false);
     yaw_feedback_policy_.max_yaw_variance = declare_parameter<double>(
       "output.yaw_feedback.max_yaw_variance", 0.10);
-    yaw_feedback_policy_.max_covariance_age_solves = static_cast<unsigned int>(std::max(0,
+    yaw_feedback_policy_.max_covariance_age_solves = static_cast<unsigned int>(std::max<int64_t>(0,
       declare_parameter<int>("output.yaw_feedback.max_covariance_age_solves", 80)));
 
     // SE(2) right-invariant correction is opt-in, mutually exclusive with the
