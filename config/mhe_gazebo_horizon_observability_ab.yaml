@@ -1,0 +1,344 @@
+mhe_sensor_fusion:
+  ros__parameters:
+    use_sim_time: true
+    odom_topic: /odom/unfiltered
+    imu_topic: /imu/data
+    output_topic: /odom
+
+    odom_frame: odom
+    base_frame: base_footprint
+    publish_tf: true
+
+    # Gazebo test: avoid publishing artificially future-dated TF.
+    transform_time_offset: 0.0
+
+    robot:
+      # Replace with the measured wheel-center separation [m].
+      wheel_separation: 0.30
+
+    # Fixed-rate continuous output. Sensor fusion itself is asynchronous.
+    frequency: 100.0
+    max_iterations: 4
+    solver_budget_ms: 6.0
+
+    # Solve at most once per 100-Hz output tick even if several asynchronous
+    # sensor callbacks arrive together. Cholesky is preferred and QR fallback
+    # is attempted only for numerical/cost failures with time budget remaining.
+    solver:
+      batch_events: true
+      dense_qr_max_states: 20
+      # Dense Normal Cholesky is usually faster on 13-state horizons;
+      # unsuccessful solutions are retried using Dense QR automatically.
+      prefer_normal_cholesky: true
+      # Experimental SO(2) gyro increment: replaces (never duplicates) unary gyro factor.
+      gyro_increment_factor_enabled: true
+      gyro_increment_bias_bridge_enabled: true  # Opt-in bridge uncertainty
+      horizon_observability_enabled: true
+      horizon_observability_update_every_n: 5
+      horizon_observability_min_wheel_samples: 5
+      horizon_observability_min_gyro_samples: 5
+      horizon_observability_min_span_sec: 0.08
+      horizon_observability_information_reference: 0.25
+      horizon_observability_process_weight_scale: 1.0
+      horizon_observability_bias_scale: 0.03
+      horizon_observability_slip_scale: 0.02
+      gyro_increment_model_sigma: 0.12  # rad/s, ZOH quadrature model uncertainty
+      gyro_increment_max_dt: 0.030  # s, fallback to unary gyro after large gap
+      # True: analytic Jacobians for wheel/process; false: reference Ceres AutoDiff.
+      analytic_factors_enabled: true
+      # SO(2) yaw residual is invariant to +/- 2*pi representations.
+      so2_yaw_residual_enabled: true
+      # Exact SE(2) circular-arc integration for process/output pose and covariance.
+      exact_se2_motion_enabled: true
+      incremental_graph_enabled: true
+      block_schur_enabled: true
+      # Remove artificial eigenvalue floors on unobservable slip/bias modes.
+      # Opt-in; benchmark against the legacy prior before physical deployment.
+      rank_aware_prior_enabled: true
+      prior_eigen_relative_cutoff: 1.0e-9
+      prior_max_discarded_gradient_fraction: 1.0e-4
+      # QR retries share the original Ceres solver budget and are skipped
+      # for physical endpoint jumps (retrying QR does not fix implausible motion).
+      qr_fallback_min_remaining_ms: 1.0
+      qr_fallback_on_endpoint_jump: false
+      # Reject a solution that increases cost or jumps too far from last
+      # accepted optimized endpoint. Conservative margins for real motion.
+      cost_tolerance: 0.0001
+      max_endpoint_linear_accel: 8.0
+      max_endpoint_angular_accel: 40.0
+      linear_jump_margin: 0.5
+      angular_jump_margin: 1.5
+
+    rt:
+      # Diagnostic deadline; Ceres max_solver_time is a soft limit, not WCET.
+      deadline_ms: 10.0
+
+    # Kept only for compatibility with older configs; the asynchronous MHE
+    # uses timing.horizon_duration and timing.max_horizon_states below.
+    window_size: 15
+
+    # ------------------------------------------------------------
+    # Time-aligned asynchronous fusion
+    # ------------------------------------------------------------
+    timing:
+      # Horizon is defined in seconds, not number of samples. This keeps the
+      # same temporal horizon when IMU and wheel odom have different rates.
+      horizon_duration: 0.12
+      max_horizon_states: 32
+
+      # Maximum number of queued sensor events processed on one 100-Hz output
+      # tick. 16 is ample for 100-Hz IMU + 50-100-Hz odometry.
+      max_events_per_tick: 16
+      max_event_queue_size: 256
+
+      # Odom and IMU samples with nearly identical timestamps are merged into
+      # one state instead of creating an almost-zero-dt transition.
+      merge_tolerance: 0.0008
+
+      # Older events beyond this tolerance are discarded rather than inserted
+      # backwards into the already-linearized horizon.
+      out_of_order_tolerance: 0.002
+
+      # A long sensor gap resets only the optimization horizon; the continuous
+      # published odometry pose is preserved so TF does not jump.
+      reset_gap: 0.25
+
+      # If no valid sensor event arrives for this duration, published v/w are
+      # forced to zero and confidence is reduced.
+      sensor_timeout: 0.2
+      # Stage 1: align every publication to /clock and defer future inputs.
+      timestamp_aligned_output_enabled: true
+      max_propagation_gap: 0.05
+      future_tolerance: 0.002
+
+      # Start from wheel odometry so x/y/yaw have a valid initial reference.
+      require_odom_for_init: true
+
+    output:
+      linear_deadband: 0.002
+      angular_deadband: 0.004
+
+      # Smooth only optimized v/w used by the continuous odom propagator.
+      # Pose itself is never low-pass filtered, so yaw remains responsive.
+      smoothing:
+        # Preserve linear velocity smoothness, without delaying yaw response.
+        # Master enabled controls both channels through independent switches.
+        enabled: true
+        linear_enabled: true
+        angular_enabled: false
+
+        # Fixed-tau fallback. With adaptive_tau_enabled=true the values below
+        # are used only if adaptive smoothing is disabled at runtime.
+        linear_tau: 0.030
+        angular_tau: 0.018
+
+        # Reject isolated one-cycle Ceres endpoint spikes. Median-of-3 adds at
+        # most one 100-Hz sample of delay to a genuine step.
+        median3_enabled: true
+
+        # Motion-adaptive smoothing: tiny solve-to-solve changes get stronger
+        # filtering, while a genuine maneuver automatically switches to the
+        # fast time constant. This smooths odom without low-pass filtering pose.
+        adaptive_tau_enabled: true
+        linear_quiet_tau: 0.060
+        linear_fast_tau: 0.020
+        angular_quiet_tau: 0.040
+        angular_fast_tau: 0.008
+        linear_transition: 0.060
+        angular_transition: 0.150
+
+        max_linear_accel: 3.0
+        max_linear_decel: 4.0
+        max_angular_accel: 12.0
+        max_angular_decel: 16.0
+        max_linear_jerk: 60.0
+        max_angular_jerk: 240.0
+
+      # Diagnostic/experimental: disabled by default until yaw is compared
+      # to Gazebo ground truth. If enabled, corrections are timestamp-aligned,
+      # outlier-gated, rate capped and reflected in twist.angular.z.
+      # Bounded SE(2) right-invariant pose reconciliation; OFF until Gazebo A/B.
+      se2_correction:
+        enabled: false
+        gain: 0.12
+        max_linear_rate: 0.03
+        max_angular_rate: 0.12
+        max_error_m: 0.15
+        max_error_rad: 0.20
+        max_age_sec: 0.04
+        max_reference_skew_sec: 0.002
+      yaw_feedback:
+        enabled: false
+        gain: 0.15
+        max_rate: 0.20
+        max_error: 0.20
+        max_sensor_age: 0.04
+        # Stage 2: reference solver endpoint must have the correct timestamp.
+        max_reference_skew: 0.002
+        min_confidence: 0.35
+        max_gyro_prefit_nis: 16.0
+        require_covariance: false
+        max_yaw_variance: 0.10
+        max_covariance_age_solves: 80
+
+    stationary:
+      enabled: true
+      linear_velocity_threshold: 0.012
+      angular_velocity_threshold: 0.025
+      gyro_threshold: 0.025
+      accel_threshold: 0.18
+      min_samples: 4
+      sigma_v: 0.004
+      sigma_w: 0.008
+
+    # Process random-walk sigmas are internally scaled by sqrt(dt / 0.01),
+    # so asynchronous IMU/odom rates do not change their effective weighting.
+    process:
+      sigma_v: 0.10
+      sigma_w: 0.22
+
+    gyro_z_scale: 1.0
+    accel_x_scale: 1.0
+    accel_lpf_tau: 0.08
+
+    # Longitudinal accelerometer preprocessing. Keep gravity_compensation
+    # false unless sensor_msgs/Imu.orientation is trustworthy. auto_zero learns
+    # any residual static longitudinal offset while wheel odom + gyro are quiet.
+    accel:
+      gravity_compensation: true
+      gravity_mps2: 9.80665
+      axis: [1.0, 0.0, 0.0]
+      auto_zero:
+        enabled: true
+        alpha: 0.02
+        max_abs_offset: 12.0
+      max_jerk: 30.0
+      huber_delta: 1.5
+
+    sigma_wheel_left: 0.025
+    sigma_wheel_right: 0.025
+    sigma_gyro: 0.010
+    sigma_accel: 1.50
+
+    # Adaptive Q/R uses PRE-FIT innovation statistics.  The incoming sample is
+    # compared with the prior MHE state before warm-start and before Ceres can
+    # fit that same sample. Hysteresis + rate limiting prevent R chatter.
+    adaptive:
+      enabled: true
+      ewma_alpha: 0.05
+      max_wheel_r_scale: 3.0
+      max_sensor_r_scale: 3.0
+      max_q_scale: 5.0
+      qv_gain: 1.5
+      qw_gain: 1.5
+      accel_reference: 0.50
+      angular_accel_reference: 1.50
+      # Slower Q adaptation prevents acceleration/turn transients from changing
+      # process weighting abruptly from one 100-Hz output tick to the next.
+      q_scale_alpha: 0.06
+
+      # Approximate prior-prediction uncertainty used in
+      # S ~= R + sigma_model^2 for pre-fit normalized innovation.
+      prefit_wheel_model_sigma: 0.040
+      prefit_gyro_model_sigma: 0.025
+      prefit_accel_model_sigma: 0.50
+
+      # Hysteresis: enter degraded mode only after sustained high NIS and leave
+      # it only after sustained recovery. This prevents R from toggling/jittering.
+      nis_high: 4.0
+      nis_low: 2.0
+      enter_samples: 5
+      exit_samples: 20
+      scale_step_up: 0.20
+      scale_step_down: 0.04
+
+    # Approximate PRE-FIT innovation gating per sensor event (not EWMA).
+    # Gating is intentionally conservative for real robot transients.
+    innovation_gate:
+      enabled: true
+      wheel_soft_nis: 9.0
+      wheel_hard_nis: 64.0
+      gyro_soft_nis: 9.0
+      gyro_hard_nis: 64.0
+      accel_soft_nis: 16.0
+      accel_hard_nis: 100.0
+      max_sigma_scale: 3.0
+      warmup_accepted_solves: 5
+      large_gap_sec: 0.035
+
+    # Slip profile matching the stable configuration already validated by the
+    # robot. Observability-aware priors keep unobservable slip from drifting.
+    slip:
+      left_min: -0.40
+      left_max: 1.50
+      right_min: -0.40
+      right_max: 1.50
+
+      accel_observable: 0.40
+      angular_observable: 0.35
+
+      sigma_common_unobservable: 0.035
+      sigma_common_active: 0.15
+      sigma_diff_unobservable: 0.040
+      sigma_diff_active: 0.30
+
+      sigma_left_process: 0.025
+      sigma_right_process: 0.025
+      warm_start_decay: 0.998
+
+      # Common-mode slip remains fundamentally unobservable during constant
+      # straight motion with wheel+IMU alone. During acceleration the estimator
+      # now pairs wheel-body acceleration with IMU acceleration to learn it,
+      # then holds the learned value with a slowly decaying memory.
+      # Conservative common-slip learning profile. It still learns during
+      # real longitudinal excitation, but no longer lets a short accel spike
+      # move sC fast enough to disturb realtime v/omega output.
+      sigma_common_hold: 0.10
+      common_memory_tau: 10.0
+      common_learn_observability: 0.45
+      min_speed_observable: 0.05
+      sigma_common_accel: 0.50
+      accel_pair_max_age: 0.030
+      common_memory_alpha_min: 0.03
+      common_memory_alpha_max: 0.12
+      # Never update slip memory from a rejected solve or inconsistent accel.
+      memory_max_prefit_nis: 9.0
+
+    # Posterior covariance is obtained from the Ceres normal equations rather
+    # than fixed heuristic numbers. It is intentionally evaluated at 10 Hz to
+    # keep the 100-Hz estimator deterministic.
+    covariance:
+      enabled: true
+      # Async selected-marginal covariance: Ceres Jacobian snapshot is taken in
+      # 100 Hz callback. Cholesky solve of 9x9 tail marginal runs on worker.
+      # No Ceres Problem pointers ever enter the worker thread.
+      async_enabled: true
+      snapshot_budget_ms: 4.5
+      max_stale_solves: 120
+      # New off by default; set true only in A/B configuration.
+      jacobi_scaled_enabled: false
+      svd_fallback_enabled: true
+      minimum_rcond: 1.0e-10
+      svd_relative_cutoff: 1.0e-11
+      maximum_svd_condition: 1.0e10
+      # Covariance is an approximation based on robustified J^T J.
+      update_every_n: 20
+      max_age_solves: 60
+      rt_budget_ms: 8.0  # legacy setting, reserved for config compatibility
+      rt_reserve_ms: 2.5  # time reserved for publishing after Jacobian snapshot
+      defer_if_slow: true
+      max_states: 20
+      min_variance: 1.0e-9
+      max_variance: 100.0
+      # Optional independent-ground-truth calibration of published x/y/yaw
+      # std deviations. Defaults are identity; keep disabled for deployment
+      # until a held-out validation across sessions AND real robot passes.
+      calibration:
+        enabled: false
+        pose_std_scales: [1.0, 1.0, 1.0]
+
+    limits:
+      max_abs_v: 1.5
+      max_abs_w: 6.0
+      max_abs_gyro: 8.0
+      max_abs_accel: 15.0
