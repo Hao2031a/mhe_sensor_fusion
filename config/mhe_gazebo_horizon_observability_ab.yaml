@@ -32,8 +32,8 @@ mhe_sensor_fusion:
       prefer_normal_cholesky: true
       # Experimental SO(2) gyro increment: replaces (never duplicates) unary gyro factor.
       gyro_increment_factor_enabled: true
-      gyro_increment_bias_bridge_enabled: false  # Opt-in bridge uncertainty
-      horizon_observability_enabled: false
+      gyro_increment_bias_bridge_enabled: true  # Opt-in bridge uncertainty
+      horizon_observability_enabled: true
       horizon_observability_update_every_n: 5
       horizon_observability_min_wheel_samples: 5
       horizon_observability_min_gyro_samples: 5
@@ -159,7 +159,7 @@ mhe_sensor_fusion:
       # outlier-gated, rate capped and reflected in twist.angular.z.
       # Bounded SE(2) right-invariant pose reconciliation; OFF until Gazebo A/B.
       se2_correction:
-        enabled: true
+        enabled: false
         gain: 0.12
         max_linear_rate: 0.03
         max_angular_rate: 0.12
@@ -316,7 +316,7 @@ mhe_sensor_fusion:
       snapshot_budget_ms: 4.5
       max_stale_solves: 120
       # New off by default; set true only in A/B configuration.
-      jacobi_scaled_enabled: true
+      jacobi_scaled_enabled: false
       svd_fallback_enabled: true
       minimum_rcond: 1.0e-10
       svd_relative_cutoff: 1.0e-11
