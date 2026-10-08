@@ -22,6 +22,7 @@
 #include "mhe_sensor_fusion/se2_yaw_math.hpp"
 #include "mhe_sensor_fusion/se2_error_correction.hpp"
 #include "mhe_sensor_fusion/gyro_increment.hpp"
+#include "mhe_sensor_fusion/horizon_observability.hpp"
 #include "mhe_sensor_fusion/block_schur.hpp"
 #include "mhe_sensor_fusion/rank_aware_prior.hpp"
 #include "mhe_sensor_fusion/marginal_factor_selector.hpp"
@@ -395,6 +396,24 @@ public:
     // Brownian bridge correction to gyro-bias integral uncertainty (opt-in).
     gyro_increment_bias_bridge_enabled_ = declare_parameter<bool>(
       "solver.gyro_increment_bias_bridge_enabled", false);
+    horizon_obs_enabled_ = declare_parameter<bool>(
+      "solver.horizon_observability_enabled", false);
+    horizon_obs_update_every_n_ = std::clamp(static_cast<int>(declare_parameter<int>(
+      "solver.horizon_observability_update_every_n", 5)), 1, 100);
+    horizon_obs_config_.min_wheel_samples = std::max(2, static_cast<int>(declare_parameter<int>(
+      "solver.horizon_observability_min_wheel_samples", 5)));
+    horizon_obs_config_.min_gyro_samples = std::max(2, static_cast<int>(declare_parameter<int>(
+      "solver.horizon_observability_min_gyro_samples", 5)));
+    horizon_obs_config_.min_span_sec = std::max(0.01, declare_parameter<double>(
+      "solver.horizon_observability_min_span_sec", 0.08));
+    horizon_obs_config_.information_reference = std::max(1e-5, declare_parameter<double>(
+      "solver.horizon_observability_information_reference", 0.25));
+    horizon_obs_config_.process_weight_scale = std::clamp(declare_parameter<double>(
+      "solver.horizon_observability_process_weight_scale", 1.0), 0.0, 1.0);
+    horizon_obs_config_.bias_scale = std::max(1e-5, declare_parameter<double>(
+      "solver.horizon_observability_bias_scale", 0.03));
+    horizon_obs_config_.slip_scale = std::max(1e-5, declare_parameter<double>(
+      "solver.horizon_observability_slip_scale", 0.02));
     gyro_increment_model_sigma_ = std::max(0.01, declare_parameter<double>(
       "solver.gyro_increment_model_sigma", 0.12));
     gyro_increment_max_dt_ = std::clamp(declare_parameter<double>(
@@ -755,6 +774,8 @@ public:
       "/mhe/rt_profile", 10);
     graph_status_pub_ = create_publisher<std_msgs::msg::Float64MultiArray>(
       "/mhe/graph_status", 10);
+    horizon_obs_pub_ = create_publisher<std_msgs::msg::Float64MultiArray>(
+      "/mhe/horizon_observability", 10);
     covariance_worker_pub_ = create_publisher<std_msgs::msg::Float64MultiArray>(
       "/mhe/cov_worker_status", 10);
 
@@ -1060,6 +1081,17 @@ private:
     differential_slip_observability_ = std::clamp(
       rotation_level / std::max(slip_angular_observable_, 1e-3), 0.0, 1.0);
 
+    if (horizon_obs_enabled_) {
+      // Only previously accepted Ceres states may relax FUTURE prior weights.
+      // This is not another sensor factor and adds no duplicate gyro readings.
+      const double c = horizon_obs_result_.valid && last_solution_usable_ ?
+        horizon_obs_result_.scores[1] : 0.0;
+      const double d = horizon_obs_result_.valid && last_solution_usable_ ?
+        horizon_obs_result_.scores[2] : 0.0;
+      common_slip_observability_ = std::min(common_slip_observability_, c);
+      differential_slip_observability_ = d;
+    }
+
     // Slowly forget a previously learned common slip instead of instantly
     // forcing it to zero when the robot returns to constant-speed motion.
     if (common_slip_memory_valid_) {
@@ -1098,6 +1130,44 @@ private:
       differential_slip_observability_ *
       (sigma_slip_diff_active_ - sigma_slip_diff_unobservable_);
     z.differential_slip_reference = 0.0;
+  }
+
+  void updateHorizonObservability()
+  {
+    if (!horizon_obs_enabled_ || states_.size() != measurements_.size() ||
+      states_.size() < 2 || accepted_solution_count_ %
+        static_cast<uint64_t>(horizon_obs_update_every_n_) != 0) {
+      return;
+    }
+    const auto start = std::chrono::steady_clock::now();
+    std::vector<mhe_sensor_fusion::horizon_observability::Sample> samples;
+    samples.reserve(states_.size());
+    const double nominal_dt = 1.0 / std::max(1.0, frequency_);
+    const auto t0 = measurements_.front().stamp;
+    for (size_t k=0;k<states_.size();++k) {
+      const auto & x=states_[k];
+      const auto & z=measurements_[k];
+      mhe_sensor_fusion::horizon_observability::Sample s;
+      s.time_sec=(z.stamp-t0).seconds();
+      s.v=x[V]; s.w=x[W]; s.slip_left=x[SL]; s.slip_right=x[SR];
+      s.wheel=z.has_odom; s.gyro=z.has_gyro;
+      s.wheel_sigma_left=sigma_wheel_left_base_*z.r_scale_left;
+      s.wheel_sigma_right=sigma_wheel_right_base_*z.r_scale_right;
+      s.gyro_sigma=sigma_gyro_base_*z.r_scale_gyro;
+      if(k>0) {
+        const double dt=(z.stamp-measurements_[k-1].stamp).seconds();
+        const double qscale=std::sqrt(std::max(dt,1e-6)/nominal_dt);
+        s.sigma_process_v=process_sigma_base_[V]*qscale*z.qv_scale;
+        s.sigma_process_w=process_sigma_base_[W]*qscale*z.qw_scale;
+      }
+      samples.push_back(s);
+    }
+    horizon_obs_config_.wheel_separation=wheel_separation_;
+    horizon_obs_result_ = mhe_sensor_fusion::horizon_observability::evaluate(
+      samples, horizon_obs_config_);
+    horizon_obs_compute_ms_=std::chrono::duration<double,std::milli>(
+      std::chrono::steady_clock::now()-start).count();
+    ++horizon_obs_updates_;
   }
 
   // Gating is evaluated once for each newly received measurement, BEFORE
@@ -1428,6 +1498,8 @@ private:
 
   void resetHorizon(bool reset_published_pose)
   {
+    horizon_obs_result_ = {};
+    horizon_obs_compute_ms_ = 0.0;
     invalidateGraph();
     states_.clear();
     measurements_.clear();
@@ -2802,6 +2874,7 @@ private:
       last_accepted_stamp_ = measurements_.back().stamp;
       have_last_accepted_endpoint_ = true;
       ++accepted_solution_count_;
+      updateHorizonObservability();
       const double elapsed_ms = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - solve_start).count();
       updatePosteriorCovariance(problem, elapsed_ms);
@@ -3311,6 +3384,22 @@ private:
       gyro_increment_bias_bridge_enabled_ ? 1.0 : 0.0,
       process_sigma_base_[BG] * std::sqrt(std::max(frequency_, 1.0))};
     graph_status_pub_->publish(graph_status);
+    std_msgs::msg::Float64MultiArray horizon_status;
+    horizon_status.data = {
+      horizon_obs_enabled_ ? 1.0 : 0.0,
+      horizon_obs_result_.valid ? 1.0 : 0.0,
+      static_cast<double>(horizon_obs_result_.states),
+      static_cast<double>(horizon_obs_result_.wheel_samples),
+      static_cast<double>(horizon_obs_result_.gyro_samples),
+      horizon_obs_result_.span_sec,
+      static_cast<double>(horizon_obs_result_.rank),
+      horizon_obs_result_.conditional_information[0],
+      horizon_obs_result_.conditional_information[1],
+      horizon_obs_result_.conditional_information[2],
+      horizon_obs_result_.scores[0], horizon_obs_result_.scores[1],
+      horizon_obs_result_.scores[2], horizon_obs_compute_ms_,
+      static_cast<double>(horizon_obs_updates_)};
+    horizon_obs_pub_->publish(horizon_status);
 
     std_msgs::msg::Float64MultiArray bias;
     bias.data = {x[BG], x[BA]};
@@ -3655,6 +3744,12 @@ private:
   bool so2_yaw_residual_enabled_{false};
   bool gyro_increment_factor_enabled_{false};
   bool gyro_increment_bias_bridge_enabled_{false};
+  bool horizon_obs_enabled_{false};
+  int horizon_obs_update_every_n_{5};
+  mhe_sensor_fusion::horizon_observability::Config horizon_obs_config_{};
+  mhe_sensor_fusion::horizon_observability::Result horizon_obs_result_{};
+  double horizon_obs_compute_ms_{0.0};
+  uint64_t horizon_obs_updates_{0};
   double gyro_increment_model_sigma_{0.12};
   double gyro_increment_max_dt_{0.030};
   bool exact_se2_motion_enabled_{false};
@@ -3860,6 +3955,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr solver_health_pub_;
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr realtime_profile_pub_;
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr graph_status_pub_;
+  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr horizon_obs_pub_;
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr covariance_worker_pub_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   rclcpp::TimerBase::SharedPtr timer_;
