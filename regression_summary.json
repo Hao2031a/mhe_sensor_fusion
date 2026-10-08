@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "checks": {
+    "deterministic_output": true,
+    "yaw_latency_synthetic": true,
+    "qr_fallback_policy_synthetic": true,
+    "timestamp_yaw_policy_synthetic": true,
+    "monte_carlo_output": true,
+    "innovation_gate_and_covariance": true,
+    "nees_nis_independent_calibration": true,
+    "linear_jitter_improvement_ge_15_percent": true,
+    "legacy_angular_shaper_jitter_improvement_ge_15_percent": true,
+    "common_slip_peak_bounded": true,
+    "common_slip_excitation_learns": true,
+    "accel_corrected_rmse_below_0_25": true,
+    "covariance_n20_relative_error_below_0_05": true
+  },
+  "metrics": {
+    "yaw_rmse_improvement_synthetic_pct": 89.58614337007,
+    "qr_retry_reduction_synthetic_pct": 63.95348837209303,
+    "linear_jitter_reduction_pct": 32.74173819285412,
+    "angular_jitter_reduction_pct": 35.9470147594545,
+    "common_slip_peak": 0.20838631805316293,
+    "accel_rmse_mps2": 0.10430149702284948
+  }
+}

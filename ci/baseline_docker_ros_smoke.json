@@ -1,0 +1,12 @@
+{
+  "description": "User-provided Docker ROS smoke report before real-time performance changes; timings are environment-dependent, not a ground-truth accuracy reference.",
+  "solver_time_ms": {
+    "count": 715,
+    "p50": 3.689195,
+    "p95": 12.80321,
+    "p99": 15.276443,
+    "max": 15.88044
+  },
+  "odom_samples": 720,
+  "test_period_s": 7.0
+}

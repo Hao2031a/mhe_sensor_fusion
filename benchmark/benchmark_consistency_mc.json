@@ -1,0 +1,19 @@
+{
+  "kind": "independent_gaussian_metric_calibration_only",
+  "samples": 8000,
+  "nees_mean_correct_covariance": 2.9977958915354845,
+  "nees_mean_overconfident_covariance": 14.98897945767742,
+  "nees_95pct_coverage_correct_covariance": 0.9525,
+  "nis_mean_correct_variance": 0.9748899361179858,
+  "nis_mean_overconfident_variance": 8.774009425061873,
+  "nis_95pct_coverage_correct_variance": 0.952,
+  "checks": {
+    "mean_nees_correct_close_to_dim_3": true,
+    "nees_95pct_coverage_near_95pct": true,
+    "overconfident_covariance_detected": true,
+    "mean_nis_correct_close_to_1": true,
+    "nis_95pct_coverage_near_95pct": true,
+    "overconfident_innovation_variance_detected": true
+  },
+  "pass": true
+}

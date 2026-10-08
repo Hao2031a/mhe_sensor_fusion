@@ -1,0 +1,13 @@
+{
+  "nominal_false_soft_fraction": 0.00255,
+  "nominal_false_hard_fraction": 0.0,
+  "gross_spike_hard_detection_fraction": 0.999965,
+  "maneuver_false_hard_fraction": 0.0,
+  "output_covariance_min_eigenvalue": 0.00016108213856633,
+  "output_covariance_diag_after_50s": [
+    0.003551932417684279,
+    0.001951891197246143,
+    0.0015749999999997793
+  ],
+  "pass": true
+}

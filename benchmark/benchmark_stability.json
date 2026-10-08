@@ -1,0 +1,38 @@
+{
+  "linear_output": {
+    "raw_steady_error_std": 0.017289030602216898,
+    "baseline_steady_error_std": 0.005720277803816079,
+    "candidate_steady_error_std": 0.0038473594213866732,
+    "jitter_reduction_vs_baseline_percent": 32.74173819285412,
+    "baseline_max_step": 0.030000000000000027,
+    "candidate_max_step": 0.030000000000000027,
+    "baseline_t90_s": 0.1200000000000001,
+    "candidate_t90_s": 0.1200000000000001,
+    "t90_penalty_s": 0.0,
+    "median_guard_peak_change": 0.2926303390600641,
+    "effective_tau_min_s": 0.020000000000000004,
+    "effective_tau_max_s": 0.06,
+    "pass": true
+  },
+  "angular_output": {
+    "raw_steady_error_std": 0.0370350440804181,
+    "baseline_steady_error_std": 0.015096132351210644,
+    "candidate_steady_error_std": 0.009669523426814168,
+    "jitter_reduction_vs_baseline_percent": 35.9470147594545,
+    "baseline_max_step": 0.16,
+    "candidate_max_step": 0.16,
+    "baseline_t90_s": 0.08000000000000007,
+    "candidate_t90_s": 0.08000000000000007,
+    "t90_penalty_s": 0.0,
+    "median_guard_peak_change": 1.3810668941022322,
+    "effective_tau_min_s": 0.008,
+    "effective_tau_max_s": 0.04,
+    "pass": true
+  },
+  "stationary_snap": {
+    "expected_stationary_v": 0.0,
+    "expected_stationary_w": 0.0,
+    "pass": true
+  },
+  "overall_pass": true
+}

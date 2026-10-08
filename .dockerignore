@@ -1,0 +1,14 @@
+.git
+.github
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/build/
+**/install/
+**/log/
+**/*.bag
+**/*.db3
+**/*.mcap
+benchmark/*.json
+benchmark/*_output.txt
+ci-results/

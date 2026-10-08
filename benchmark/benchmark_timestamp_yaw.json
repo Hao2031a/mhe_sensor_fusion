@@ -1,0 +1,15 @@
+{
+  "kind": "synthetic_policy_model_not_ros_or_gazebo",
+  "seeds": 30,
+  "sensor_hz": 55,
+  "output_hz": 100,
+  "mean_yaw_rmse_unanchored_rad": 0.11453298596537699,
+  "mean_yaw_rmse_opt_in_feedback_rad": 0.0009057879395816745,
+  "max_correction_rad_per_tick": 0.0012324664653911243,
+  "checks": {
+    "rate_capped": true,
+    "lower_synthetic_yaw_rmse": true,
+    "reject_large_outliers": true
+  },
+  "pass": true
+}

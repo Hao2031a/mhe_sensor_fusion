@@ -1,0 +1,25 @@
+{
+  "linear": {
+    "trials": 200,
+    "jitter_improvement_pct_median": 28.418812612683265,
+    "jitter_improvement_pct_p05": 19.41143570638686,
+    "jitter_improvement_pct_p95": 35.36301296510599,
+    "t90_penalty_s_median": 0.0,
+    "t90_penalty_s_p95": 0.010000000000000009,
+    "max_step_ratio_median": 1.0000000000000004,
+    "max_step_ratio_p95": 1.0240617343934004,
+    "pass": true
+  },
+  "angular": {
+    "trials": 200,
+    "jitter_improvement_pct_median": 36.909491503249015,
+    "jitter_improvement_pct_p05": 16.219142310334913,
+    "jitter_improvement_pct_p95": 46.213300300708696,
+    "t90_penalty_s_median": 0.0,
+    "t90_penalty_s_p95": 0.010000000000000009,
+    "max_step_ratio_median": 1.0,
+    "max_step_ratio_p95": 1.0,
+    "pass": true
+  },
+  "overall_pass": true
+}

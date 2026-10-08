@@ -1,0 +1,41 @@
+{
+  "common_slip": {
+    "truth": 0.2,
+    "peak_estimate": 0.20838631805316293,
+    "estimate_at_end_excitation": 0.16431623115241095,
+    "mean_hold_4_to_6s": 0.1484059857655147,
+    "mean_hold_6_to_8s": 0.12150454448708023,
+    "old_unobservable_baseline": 0.0
+  },
+  "accelerometer_robustness": {
+    "rmse_old_mps2": 9.787230364138974,
+    "rmse_new_mps2": 0.10430149702284948,
+    "improvement_factor": 93.83595292016635,
+    "learned_zero_offset_mps2": 9.788035711471307,
+    "max_abs_corrected_mps2": 0.9416318538320763
+  },
+  "covariance_consistency": {
+    "5": {
+      "empirical_variance": 0.0020226239288073707,
+      "hessian_variance": 0.0020000000000000005,
+      "hessian_relative_error": 0.011185435159323132,
+      "fixed_variance": 0.010000000000000002,
+      "fixed_relative_error": 3.944072824203384
+    },
+    "20": {
+      "empirical_variance": 0.0004968275179579312,
+      "hessian_variance": 0.0005000000000000001,
+      "hessian_relative_error": 0.006385479723644261,
+      "fixed_variance": 0.010000000000000002,
+      "fixed_relative_error": 19.127709594472883
+    }
+  },
+  "scalability": {
+    "nominal_imu100_odom50_old_solves_per_s": 150,
+    "nominal_batched_max_solves_per_s": 100,
+    "nominal_solve_reduction_percent": 33.333333333333336,
+    "observed_4_events_tick_old_solves": 4,
+    "observed_4_events_tick_new_solves": 1,
+    "observed_burst_reduction_percent": 75.0
+  }
+}

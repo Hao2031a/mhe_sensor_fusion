@@ -1,0 +1,27 @@
+# Build context MUST be the root directory of the mhe_sensor_fusion package.
+# Official ROS 2 Kilted image on Ubuntu 24.04 (Noble).
+ARG ROS_IMAGE=ros:kilted-ros-base-noble
+FROM ${ROS_IMAGE}
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+ENV DEBIAN_FRONTEND=noninteractive \
+    ROS_DISTRO=kilted \
+    PYTHONUNBUFFERED=1 \
+    ROS_DOMAIN_ID=42
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake pkg-config \
+    libceres-dev libeigen3-dev \
+    python3-numpy python3-yaml python3-colcon-common-extensions \
+    ros-kilted-rclpy ros-kilted-ros2launch \
+    ros-kilted-rclcpp ros-kilted-nav-msgs ros-kilted-sensor-msgs \
+    ros-kilted-geometry-msgs ros-kilted-std-msgs \
+    ros-kilted-tf2 ros-kilted-tf2-ros ros-kilted-tf2-geometry-msgs \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /ws
+COPY . /ws/src/mhe_sensor_fusion/
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
+    && colcon build --packages-select mhe_sensor_fusion --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+ENV CI_ARTIFACT_DIR=/artifacts
+CMD ["/bin/bash", "/ws/src/mhe_sensor_fusion/ci/run_ci.sh"]

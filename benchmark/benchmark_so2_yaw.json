@@ -1,0 +1,123 @@
+{
+  "pass": true,
+  "type": "independent_numerical_reference_synthetic",
+  "mathematical_not_yaw_rmse_claim": true,
+  "max_exact_arc_rmse_m": 2.1611132519910787e-09,
+  "max_exact_to_midpoint_error_ratio_high_turn": 1.525884363316188e-05,
+  "yaw_wrap_cases": [
+    {
+      "legacy_abs_rad": 6.278185307179586,
+      "so2_abs_rad": 0.005000000000000139
+    },
+    {
+      "legacy_abs_rad": 6.278185307179586,
+      "so2_abs_rad": 0.005000000000000139
+    },
+    {
+      "legacy_abs_rad": 6.283185307179586,
+      "so2_abs_rad": 2.4492935982947064e-16
+    },
+    {
+      "legacy_abs_rad": 6.283185307179586,
+      "so2_abs_rad": 2.4492935982947064e-16
+    }
+  ],
+  "scenarios": [
+    {
+      "sensor_hz": 10,
+      "yaw_rate_rad_s": 0.0,
+      "midpoint_step_rmse_m": 7.701364737137849e-17,
+      "exact_arc_step_rmse_m": 7.701364737137849e-17
+    },
+    {
+      "sensor_hz": 10,
+      "yaw_rate_rad_s": 0.5,
+      "midpoint_step_rmse_m": 2.2276985434966825e-06,
+      "exact_arc_step_rmse_m": 3.399002237293312e-11
+    },
+    {
+      "sensor_hz": 10,
+      "yaw_rate_rad_s": 2.0,
+      "midpoint_step_rmse_m": 3.5626473255464616e-05,
+      "exact_arc_step_rmse_m": 5.429909765721342e-10
+    },
+    {
+      "sensor_hz": 10,
+      "yaw_rate_rad_s": 4.0,
+      "midpoint_step_rmse_m": 0.0001422922893234842,
+      "exact_arc_step_rmse_m": 2.1611132519910787e-09
+    },
+    {
+      "sensor_hz": 20,
+      "yaw_rate_rad_s": 0.0,
+      "midpoint_step_rmse_m": 3.8506823685689244e-17,
+      "exact_arc_step_rmse_m": 3.8506823685689244e-17
+    },
+    {
+      "sensor_hz": 20,
+      "yaw_rate_rad_s": 0.5,
+      "midpoint_step_rmse_m": 2.784688442478147e-07,
+      "exact_arc_step_rmse_m": 4.24908524159424e-12
+    },
+    {
+      "sensor_hz": 20,
+      "yaw_rate_rad_s": 2.0,
+      "midpoint_step_rmse_m": 4.4549794264117396e-06,
+      "exact_arc_step_rmse_m": 6.795880182923687e-11
+    },
+    {
+      "sensor_hz": 20,
+      "yaw_rate_rad_s": 4.0,
+      "midpoint_step_rmse_m": 1.7813236627732308e-05,
+      "exact_arc_step_rmse_m": 2.714954882860671e-10
+    },
+    {
+      "sensor_hz": 55,
+      "yaw_rate_rad_s": 0.0,
+      "midpoint_step_rmse_m": 1.3013642138778365e-17,
+      "exact_arc_step_rmse_m": 1.3013642138778365e-17
+    },
+    {
+      "sensor_hz": 55,
+      "yaw_rate_rad_s": 0.5,
+      "midpoint_step_rmse_m": 1.3390027686763155e-08,
+      "exact_arc_step_rmse_m": 2.043181763932824e-13
+    },
+    {
+      "sensor_hz": 55,
+      "yaw_rate_rad_s": 2.0,
+      "midpoint_step_rmse_m": 2.1423712329121761e-07,
+      "exact_arc_step_rmse_m": 3.268922647919751e-12
+    },
+    {
+      "sensor_hz": 55,
+      "yaw_rate_rad_s": 4.0,
+      "midpoint_step_rmse_m": 8.569060023340854e-07,
+      "exact_arc_step_rmse_m": 1.3073530475836586e-11
+    },
+    {
+      "sensor_hz": 100,
+      "yaw_rate_rad_s": 0.0,
+      "midpoint_step_rmse_m": 7.582297438283238e-18,
+      "exact_arc_step_rmse_m": 7.582297438283238e-18
+    },
+    {
+      "sensor_hz": 100,
+      "yaw_rate_rad_s": 0.5,
+      "midpoint_step_rmse_m": 2.227767461689409e-09,
+      "exact_arc_step_rmse_m": 3.3993505458561274e-14
+    },
+    {
+      "sensor_hz": 100,
+      "yaw_rate_rad_s": 2.0,
+      "midpoint_step_rmse_m": 3.56441123091467e-08,
+      "exact_arc_step_rmse_m": 5.438879361681301e-13
+    },
+    {
+      "sensor_hz": 100,
+      "yaw_rate_rad_s": 4.0,
+      "midpoint_step_rmse_m": 1.4257431068069132e-07,
+      "exact_arc_step_rmse_m": 2.1754428384470837e-12
+    }
+  ]
+}

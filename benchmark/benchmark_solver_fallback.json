@@ -1,0 +1,27 @@
+{
+  "synthetic_only": true,
+  "gazebo_tested": false,
+  "real_ceres_timed": false,
+  "trials": 30,
+  "events_per_trial": 1000,
+  "budget_ms": 6.0,
+  "metrics_mean_per_trial": {
+    "old_retries": 48.733333333333334,
+    "new_retries": 17.566666666666666,
+    "old_planned_ms": 2472.1873947565364,
+    "new_planned_ms": 2248.1864022619748,
+    "endpoint_rejections": 30.566666666666666,
+    "numerical_rejections": 8.1,
+    "cost_rejections": 10.066666666666666,
+    "skipped_numeric_retries_low_budget": 0.6,
+    "retry_reduction_pct": 63.95348837209303,
+    "planned_solver_budget_reduction_pct": 9.060841947890507
+  },
+  "checks": {
+    "new_retries_less_than_old": true,
+    "new_planned_budget_lower": true,
+    "redundant_retries_reduced_gt_50pct": true,
+    "nonzero_numerical_retry_coverage": true
+  },
+  "pass": true
+}

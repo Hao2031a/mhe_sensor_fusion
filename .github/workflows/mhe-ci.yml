@@ -1,0 +1,46 @@
+name: MHE Docker CI and Benchmark
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  docker-benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    env:
+      # If this package is inside a monorepo, COPY this workflow to the
+      # REPOSITORY-ROOT .github/workflows directory and change PACKAGE_PATH
+      # to its path relative to the Git repository root, e.g. src/mhe_sensor_fusion.
+      PACKAGE_PATH: .
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build ROS 2 Kilted/Ceres Docker image (includes colcon build)
+        run: |
+          docker build --progress=plain \
+            -f "$PACKAGE_PATH/docker/Dockerfile.ci" \
+            -t mhe-fusion-ci "${PACKAGE_PATH}"
+
+      - name: Execute CTest, benchmarks, ROS smoke and 25s fault-cycle stress
+        run: |
+          mkdir -p ci-results
+          docker run --rm --network host \
+            -e ROS_DOMAIN_ID=42 \
+            -e ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST \
+            -e CI_ARTIFACT_DIR=/artifacts \
+            -v "${PWD}/ci-results:/artifacts" \
+            mhe-fusion-ci
+
+      - name: Upload benchmark and test reports (also on failure)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mhe-benchmark-${{ github.run_id }}
+          path: ci-results/
+          if-no-files-found: warn
+          retention-days: 30

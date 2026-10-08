@@ -1,0 +1,20 @@
+{
+  "synthetic_only": true,
+  "gazebo_tested": false,
+  "trials": 30,
+  "metrics": {
+    "old_yaw_rmse_rad": 0.05029415026490224,
+    "bypass_yaw_rmse_rad": 0.005237560701828474,
+    "old_p95_abs_yaw_error_rad": 0.08930379497060771,
+    "bypass_p95_abs_yaw_error_rad": 0.009297249321021238,
+    "bypass_output_jitter_sample_std": 0.11445692302153872,
+    "rmse_improvement_percent": 89.58614337007,
+    "p95_improvement_percent": 89.58918898790223
+  },
+  "checks": {
+    "synthetic_30_seed_yaw_rmse_improvement_ge_40_pct": true,
+    "synthetic_30_seed_yaw_p95_improvement_ge_40_pct": true,
+    "unsmoothed_yaw_rmse_below_0_025rad": true
+  },
+  "pass": true
+}

@@ -1,0 +1,10 @@
+{
+  "type": "synthetic_numeric_reference_not_cpp_ros",
+  "seed": 20261008,
+  "cases": 144,
+  "max_abs_h_error": 3.469446951953614e-18,
+  "max_abs_rhs_error": 2.220446049250313e-16,
+  "block_median_ms_numpy": 0.0535059989488218,
+  "dense_median_ms_numpy": 0.02919400139944628,
+  "pass": true
+}
