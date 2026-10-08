@@ -95,7 +95,7 @@ echo '::endgroup::'
 "$PKG/ci/run_yaw_so2_ab.sh" "$ARTIFACT_DIR"
 "$PKG/ci/run_gyro_increment_ab.sh" "$ARTIFACT_DIR"
 "$PKG/ci/run_gyro_bias_bridge_ab.sh" "$ARTIFACT_DIR"
-"$PKG/ci/run_horizon_observability_ab.sh" "$ARTIFACT_DIR"
+bash "$PKG/ci/run_horizon_observability_ab.sh" "$ARTIFACT_DIR"
 "$PKG/ci/run_se2_covariance_ab.sh" "$ARTIFACT_DIR"
 echo '::group::4. Long-stress consistency unit tests and ROS stress regression'
 (cd "$PKG/ci" && python3 -m unittest -v test_consistency_metrics test_long_stress_gate test_statistical_calibration test_stress_alignment test_yaw_metrics)
