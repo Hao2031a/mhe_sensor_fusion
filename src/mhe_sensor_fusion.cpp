@@ -306,8 +306,8 @@ class AnalyticGyroIncrementCost final : public ceres::SizedCostFunction<1, NX, N
 {
 public:
   AnalyticGyroIncrementCost(double gyro_rate, double dt,
-    double sigma_gyro_rate, double sigma_model_rate)
-  : kernel_(gyro_rate, dt, sigma_gyro_rate, sigma_model_rate) {}
+    double sigma_gyro_rate, double sigma_model_rate, double q_bias_rw = 0.0)
+  : kernel_(gyro_rate, dt, sigma_gyro_rate, sigma_model_rate, q_bias_rw) {}
 
   bool Evaluate(double const * const * parameters, double * residuals,
     double ** jacobians) const override
@@ -392,6 +392,9 @@ public:
     // its unary gyro factor. Keeps adjacent-state sparsity for Block-Schur.
     gyro_increment_factor_enabled_ = declare_parameter<bool>(
       "solver.gyro_increment_factor_enabled", false);
+    // Brownian bridge correction to gyro-bias integral uncertainty (opt-in).
+    gyro_increment_bias_bridge_enabled_ = declare_parameter<bool>(
+      "solver.gyro_increment_bias_bridge_enabled", false);
     gyro_increment_model_sigma_ = std::max(0.01, declare_parameter<double>(
       "solver.gyro_increment_model_sigma", 0.12));
     gyro_increment_max_dt_ = std::clamp(declare_parameter<double>(
@@ -2570,7 +2573,9 @@ private:
       if (useGyroIncrement(k)) {
         auto * gyro_inc_cost = new AnalyticGyroIncrementCost(
           z.gyro_z, dt, sigma_gyro_base_ * z.r_scale_gyro,
-          gyro_increment_model_sigma_);
+          gyro_increment_model_sigma_,
+          gyro_increment_bias_bridge_enabled_ ?
+            process_sigma_base_[BG] / std::sqrt(nominal_dt) : 0.0);
         entry.transition.push_back(graph_problem_->AddResidualBlock(
           gyro_inc_cost, new ceres::HuberLoss(1.5),
           states_[k - 1].data(), states_[k].data()));
@@ -3301,7 +3306,10 @@ private:
         }
         return count;
       }()),
-      gyro_increment_max_dt_, gyro_increment_model_sigma_};
+      gyro_increment_max_dt_, gyro_increment_model_sigma_,
+      // [23] Brownian-bridge bias covariance mode, [24] bias RW diffusion q_b.
+      gyro_increment_bias_bridge_enabled_ ? 1.0 : 0.0,
+      process_sigma_base_[BG] * std::sqrt(std::max(frequency_, 1.0))};
     graph_status_pub_->publish(graph_status);
 
     std_msgs::msg::Float64MultiArray bias;
@@ -3646,6 +3654,7 @@ private:
   bool analytic_factors_enabled_{true};
   bool so2_yaw_residual_enabled_{false};
   bool gyro_increment_factor_enabled_{false};
+  bool gyro_increment_bias_bridge_enabled_{false};
   double gyro_increment_model_sigma_{0.12};
   double gyro_increment_max_dt_{0.030};
   bool exact_se2_motion_enabled_{false};

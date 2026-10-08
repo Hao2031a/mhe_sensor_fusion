@@ -1,5 +1,6 @@
 mhe_sensor_fusion:
   ros__parameters:
+    use_sim_time: true
     odom_topic: /odom/unfiltered
     imu_topic: /imu/data
     output_topic: /odom
@@ -25,22 +26,26 @@ mhe_sensor_fusion:
     # is attempted only for numerical/cost failures with time budget remaining.
     solver:
       batch_events: true
-      dense_qr_max_states: 16
+      dense_qr_max_states: 20
       # Dense Normal Cholesky is usually faster on 13-state horizons;
       # unsuccessful solutions are retried using Dense QR automatically.
       prefer_normal_cholesky: true
       # Experimental SO(2) gyro increment: replaces (never duplicates) unary gyro factor.
-      gyro_increment_factor_enabled: false
-      gyro_increment_bias_bridge_enabled: false  # Opt-in bridge uncertainty
+      gyro_increment_factor_enabled: true
+      gyro_increment_bias_bridge_enabled: true  # Opt-in bridge uncertainty
       gyro_increment_model_sigma: 0.12  # rad/s, ZOH quadrature model uncertainty
       gyro_increment_max_dt: 0.030  # s, fallback to unary gyro after large gap
       # True: analytic Jacobians for wheel/process; false: reference Ceres AutoDiff.
       analytic_factors_enabled: true
+      # SO(2) yaw residual is invariant to +/- 2*pi representations.
+      so2_yaw_residual_enabled: true
+      # Exact SE(2) circular-arc integration for process/output pose and covariance.
+      exact_se2_motion_enabled: true
       incremental_graph_enabled: true
       block_schur_enabled: true
       # Remove artificial eigenvalue floors on unobservable slip/bias modes.
       # Opt-in; benchmark against the legacy prior before physical deployment.
-      rank_aware_prior_enabled: false
+      rank_aware_prior_enabled: true
       prior_eigen_relative_cutoff: 1.0e-9
       prior_max_discarded_gradient_fraction: 1.0e-4
       # QR retries share the original Ceres solver budget and are skipped
@@ -51,9 +56,9 @@ mhe_sensor_fusion:
       # accepted optimized endpoint. Conservative margins for real motion.
       cost_tolerance: 0.0001
       max_endpoint_linear_accel: 8.0
-      max_endpoint_angular_accel: 30.0
-      linear_jump_margin: 0.35
-      angular_jump_margin: 1.0
+      max_endpoint_angular_accel: 40.0
+      linear_jump_margin: 0.5
+      angular_jump_margin: 1.5
 
     rt:
       # Diagnostic deadline; Ceres max_solver_time is a soft limit, not WCET.
