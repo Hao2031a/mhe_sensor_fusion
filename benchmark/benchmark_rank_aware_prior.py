@@ -53,7 +53,13 @@ summary = dict(type='synthetic_numpy_reference_not_ros', seed=20261008,
                max_relative_gradient_error=max_g_error,
                median_spurious_legacy_null_curvature=float(np.median(legacy_null_curvature)),
                pass_all=True)
-out=Path(os.environ.get('CI_ARTIFACT_DIR', str(Path(__file__).parent)))
-out.mkdir(parents=True,exist_ok=True)
-(out/'benchmark_rank_aware_prior.json').write_text(json.dumps(summary,indent=2)+'\n')
-print(json.dumps(summary,indent=2))
+report_name = 'benchmark_rank_aware_prior.json'
+report_text = json.dumps(summary, indent=2) + '\n'
+# Regression gates and CI harness always read the canonical benchmark directory.
+(Path(__file__).parent / report_name).write_text(report_text, encoding='utf-8')
+# Preserve exported reports for GitHub Actions artifacts when configured.
+if os.environ.get('CI_ARTIFACT_DIR'):
+    artifacts = Path(os.environ['CI_ARTIFACT_DIR'])
+    artifacts.mkdir(parents=True, exist_ok=True)
+    (artifacts / report_name).write_text(report_text, encoding='utf-8')
+print(json.dumps(summary, indent=2))
