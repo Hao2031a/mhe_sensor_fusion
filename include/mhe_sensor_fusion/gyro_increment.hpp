@@ -16,6 +16,23 @@ inline double sigmaAngle(double dt, double sigma_rate, double sigma_model_rate) 
   return dt * std::hypot(sigma_rate, sigma_model_rate);
 }
 
+// Conditional on both gyro-bias endpoints, the integrated Brownian-bias path
+// has residual variance q_b^2 * dt^3 / 12 (Brownian bridge).
+// q_b is in (rad/s) / sqrt(s); sigma_rate/model are discrete rad/s noises.
+inline double sigmaAngleBiasBridge(double dt, double sigma_rate,
+                                   double sigma_model_rate,
+                                   double q_bias_rw) {
+  if (!(std::isfinite(dt) && dt > 0.0 &&
+        std::isfinite(sigma_rate) && sigma_rate >= 0.0 &&
+        std::isfinite(sigma_model_rate) && sigma_model_rate >= 0.0 &&
+        std::isfinite(q_bias_rw) && q_bias_rw >= 0.0)) {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+  const double sigma_meas_model = sigmaAngle(dt, sigma_rate, sigma_model_rate);
+  const double sigma_bias_bridge = q_bias_rw * dt * std::sqrt(dt / 12.0);
+  return std::hypot(sigma_meas_model, sigma_bias_bridge);
+}
+
 inline double wrap(double theta) {
   if (theta >= -3.14159265358979323846 && theta <= 3.14159265358979323846)
     return theta;
@@ -24,8 +41,10 @@ inline double wrap(double theta) {
 
 class Kernel {
 public:
-  Kernel(double gyro_rate, double dt, double sigma_rate, double sigma_model_rate)
-    : rate_(gyro_rate), dt_(dt), sigma_(sigmaAngle(dt, sigma_rate, sigma_model_rate)) {}
+  Kernel(double gyro_rate, double dt, double sigma_rate, double sigma_model_rate,
+         double q_bias_rw = 0.0)
+    : rate_(gyro_rate), dt_(dt),
+      sigma_(sigmaAngleBiasBridge(dt, sigma_rate, sigma_model_rate, q_bias_rw)) {}
 
   // Ceres expects one row-major 1x9 Jacobian for each state block.
   // This factor has no w term: it measures yaw increment directly from the

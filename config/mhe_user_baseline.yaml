@@ -31,6 +31,7 @@ mhe_sensor_fusion:
       prefer_normal_cholesky: true
       # Experimental SO(2) gyro increment: replaces (never duplicates) unary gyro factor.
       gyro_increment_factor_enabled: false
+      gyro_increment_bias_bridge_enabled: false  # Opt-in bridge uncertainty
       gyro_increment_model_sigma: 0.12  # rad/s, ZOH quadrature model uncertainty
       gyro_increment_max_dt: 0.030  # s, fallback to unary gyro after large gap
       # True: analytic Jacobians for wheel/process; false: reference Ceres AutoDiff.
