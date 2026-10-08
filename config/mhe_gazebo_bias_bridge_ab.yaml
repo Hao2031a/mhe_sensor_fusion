@@ -33,6 +33,15 @@ mhe_sensor_fusion:
       # Experimental SO(2) gyro increment: replaces (never duplicates) unary gyro factor.
       gyro_increment_factor_enabled: true
       gyro_increment_bias_bridge_enabled: true  # Opt-in bridge uncertainty
+      horizon_observability_enabled: false
+      horizon_observability_update_every_n: 5
+      horizon_observability_min_wheel_samples: 5
+      horizon_observability_min_gyro_samples: 5
+      horizon_observability_min_span_sec: 0.08
+      horizon_observability_information_reference: 0.25
+      horizon_observability_process_weight_scale: 1.0
+      horizon_observability_bias_scale: 0.03
+      horizon_observability_slip_scale: 0.02
       gyro_increment_model_sigma: 0.12  # rad/s, ZOH quadrature model uncertainty
       gyro_increment_max_dt: 0.030  # s, fallback to unary gyro after large gap
       # True: analytic Jacobians for wheel/process; false: reference Ceres AutoDiff.
